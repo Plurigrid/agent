@@ -1,0 +1,23 @@
+{
+    "discord": {
+        "CHANNEL_IDS": [
+            "list_of_discord_channel_ids_to_read_from"
+        ]
+    },
+    "zulip": {
+        "SERVER_URL": "",
+        "STREAM": "<zulip_stream_to_listen_on>",
+        "TOPIC": "<zulip_topic_to_listen_on>",
+        "BOT_EMAIL": "<zulip_bot_email>"
+    },
+    "cosmos_client": {
+        "CHAIN_ID": "",
+        "LCD_URL": "",
+        "CONTRACT_ADDRESS": ""
+    },
+    "index": {
+        "INDEX_MODE": "<discord_or_directory>",
+        "INDEX_PATH": "agent/indices/index.json",
+        "DATA_DIR": "<path_to_directory_containing_documents_to_index"
+    }
+}

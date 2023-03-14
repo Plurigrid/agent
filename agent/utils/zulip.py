@@ -1,6 +1,7 @@
 import zulip
 import uuid
 from slugify import slugify
+import os
 
 
 class ZulipUUID:
@@ -87,9 +88,25 @@ class ZulipUUID:
 
 
 class ZulipClient:
-    def __init__(self, config):
-        self.client = zulip.Client(config_file=config.ZULIP_CONFIG_PATH)
+    def __init__(self, config, msg_handler):
+        bot_key = os.getenv("ZULIP_API_KEY")
+        bot_email = config.zulip["BOT_EMAIL"]
+        server_url = config.zulip["SERVER_URL"]
+        if bot_email is None:
+            raise ValueError("BOT_EMAIL config variable not set.")
+        if server_url is None:
+            raise ValueError("SERVER_URL config variable not set.")
+        if bot_key is None:
+            raise ValueError("ZULIP_API_KEY environment variable not set.")
+        self.client = zulip.Client(api_key=bot_key, email=bot_email, site=server_url)
         self.config = config
+        self.msg_handler = msg_handler
+
+    def run(self):
+        print("waiting for messages..")
+        self.client.call_on_each_message(
+            lambda msg: self.respond_to_message(msg, self.msg_handler)
+        )
 
     def send_message(self, message_type, stream, topic, content):
         request = {
@@ -99,6 +116,12 @@ class ZulipClient:
             "content": f"{content}",
         }
         return self.client.send_message(request)
+
+    def respond_to_message(self, msg, msg_handler):
+        stream = msg["stream_id"]
+        topic = msg["subject"]
+        output = msg_handler(msg["content"])
+        self.send_message("stream", stream, topic, output)
 
     def upload_image(self, stream, topic, image):
         image.save("tmp", "PNG")
@@ -122,19 +145,6 @@ class ZulipClient:
 
     def send_private_message(self, user_id, content):
         return self.send_message("private", [user_id], None, content)
-
-    def handle_message(self, message):
-        content = message["content"]
-        sender_email = message["sender_email"]
-
-        if content == "!help":
-            self.send_help_message(message)
-        elif content == "Add me to your DAO":
-            self.add_to_dao(sender_email)
-        elif content == "Curate my lamp configuration":
-            self.curate_lamp(sender_email)
-        else:
-            self.send_reply(message, "Sorry, I didn't understand that.")
 
     def send_reply(self, message, content):
         response = {"type": "private", "to": message["sender_id"], "content": content}

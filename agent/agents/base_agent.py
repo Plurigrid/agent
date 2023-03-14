@@ -1,16 +1,22 @@
 from abc import ABC, abstractmethod
 from agent.utils import zulip
+from agent.utils import discord
+
 
 class BaseAgent(ABC):
-    def __init__(self, config):
-        self.client = zulip.ZulipClient(config)
+    def __init__(self, config, bot_type):
+        self.bot_type = bot_type
+        if bot_type == "zulip":
+            self.client = zulip.ZulipClient(config, self.handle_input)
+        elif bot_type == "discord":
+            self.client = discord.DiscordClient(self.handle_input)
+        else:
+            raise ValueError("Invalid bot_type")
 
-    def handle_message(self):
-        print("waiting for messages..")
-        self.client.client.call_on_each_message(
-            lambda msg: self.respond_to_message(msg)
-        )
-    
+    def run(self):
+        self.client.run()
+
+    ## Returns LLM output given an input message
     @abstractmethod
-    def respond_to_message(self, msg):
+    def handle_input(self, msg):
         pass
